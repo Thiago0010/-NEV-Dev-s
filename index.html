@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador Freelancer Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h2>Bem-vindo</h2>
+            <input type="text" id="login-user" placeholder="Usuário (admin/dev)">
+            <input type="password" id="login-pass" placeholder="Senha (123)">
+            <button onclick="Auth.login()">Entrar</button>
+            <p id="login-error" class="hidden">Credenciais inválidas</p>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-layout hidden">
+        <aside class="sidebar">
+            <div class="logo">🚀 FreeManager</div>
+            <nav>
+                <button onclick="Nav.go('dashboard')" class="active"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                <button onclick="Nav.go('projects')"><i class="fas fa-briefcase"></i> Projetos</button>
+                <button onclick="Nav.go('notes')"><i class="fas fa-sticky-note"></i> Anotações</button>
+                <button onclick="Nav.go('finance')" class="admin-only"><i class="fas fa-wallet"></i> Financeiro</button>
+                <button onclick="Nav.go('team')" class="admin-only"><i class="fas fa-users"></i> Freelancers</button>
+            </nav>
+            <div class="sidebar-footer">
+                <button onclick="Theme.toggle()"><i class="fas fa-adjust"></i> Tema</button>
+                <button onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <header>
+                <h2 id="page-title">Dashboard</h2>
+                <div class="user-info">Olá, <span id="user-name">Usuário</span></div>
+            </header>
+
+            <section id="view-dashboard" class="view active">
+                <div class="cards-grid">
+                    <div class="card summary">
+                        <h3>Projetos Ativos</h3>
+                        <p id="dash-active-projects">0</p>
+                    </div>
+                    <div class="card summary">
+                        <h3>Faturamento (Mês)</h3>
+                        <p id="dash-income">R$ 0,00</p>
+                    </div>
+                    <div class="card summary">
+                        <h3>Anotações</h3>
+                        <p id="dash-notes-count">0</p>
+                    </div>
+                </div>
+                <div class="chart-container card">
+                    <h3>Status dos Projetos</h3>
+                    <canvas id="projectsChart" width="400" height="200"></canvas>
+                </div>
+            </section>
+
+            <section id="view-projects" class="view">
+                <div class="actions">
+                    <button class="btn-primary" onclick="Modal.open('project')">+ Novo Projeto</button>
+                </div>
+                <div id="projects-list" class="grid-list">
+                    </div>
+            </section>
+
+            <section id="view-notes" class="view">
+                <div class="actions">
+                    <input type="text" id="note-search" placeholder="Buscar anotações ou tags..." onkeyup="Notes.render()">
+                    <button class="btn-primary" onclick="Modal.open('note')">+ Nova Nota</button>
+                </div>
+                <div id="notes-list" class="notes-grid">
+                    </div>
+            </section>
+
+            <section id="view-finance" class="view">
+                <div class="finance-header">
+                    <div class="card bg-green">Entradas: <span id="fin-in">R$ 0</span></div>
+                    <div class="card bg-red">Saídas: <span id="fin-out">R$ 0</span></div>
+                    <div class="card bg-blue">Saldo: <span id="fin-bal">R$ 0</span></div>
+                </div>
+                <div class="actions mt-20">
+                    <button class="btn-primary" onclick="Modal.open('transaction')">+ Nova Movimentação</button>
+                </div>
+                <table class="simple-table">
+                    <thead><tr><th>Desc</th><th>Tipo</th><th>Valor</th><th>Ação</th></tr></thead>
+                    <tbody id="finance-list"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span class="close-modal" onclick="Modal.close()">&times;</span>
+            <h3 id="modal-title">Título</h3>
+            <div id="modal-body"></div> </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
