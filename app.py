@@ -48,9 +48,12 @@ def login():
         return jsonify({"status": "success", "role": "freelancer", "name": "Dev Freelancer"})
     return jsonify({"status": "error", "message": "Credenciais inválidas"}), 401
 
+
 @app.route('/api/data', methods=['GET'])
 def get_data():
     return jsonify(load_data())
+
+
 
 @app.route('/api/update', methods=['POST'])
 def update_data():

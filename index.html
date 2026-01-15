@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador Freelancer Pro</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -23,6 +23,7 @@
         <aside class="sidebar">
             <div class="logo">🚀 FreeManager</div>
             <nav>
+                <button onclick="Nav.go('all')"><i class="fas fa-th-large"></i> Tudo</button>
                 <button onclick="Nav.go('dashboard')" class="active"><i class="fas fa-chart-pie"></i> Dashboard</button>
                 <button onclick="Nav.go('projects')"><i class="fas fa-briefcase"></i> Projetos</button>
                 <button onclick="Nav.go('notes')"><i class="fas fa-sticky-note"></i> Anotações</button>
@@ -41,7 +42,7 @@
                 <div class="user-info">Olá, <span id="user-name">Usuário</span></div>
             </header>
 
-            <section id="view-dashboard" class="view active">
+            <section id="view-dashboard" class="view">
                 <div class="cards-grid">
                     <div class="card summary">
                         <h3>Projetos Ativos</h3>
@@ -93,6 +94,8 @@
                     <tbody id="finance-list"></tbody>
                 </table>
             </section>
+
+            
         </main>
     </div>
 
@@ -103,6 +106,6 @@
             <div id="modal-body"></div> </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>

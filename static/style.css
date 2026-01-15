@@ -74,3 +74,6 @@ input, select, textarea { background: var(--bg-card); color: var(--text-main); b
     .sidebar nav { display: flex; }
     .notes-grid { column-count: 1; }
 }
+/* views */
+.view { display: none; }       /* todas as views escondidas por padrão */
+.view.active { display: block; } /* somente a view ativa aparece */
