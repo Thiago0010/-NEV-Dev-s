@@ -301,7 +301,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th {
             <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem; text-align: center;">Gerencie suas finanças de forma segura.</p>
             
             <input type="text" id="auth-name" placeholder="Seu Nome Completo" class="hidden">
-            <input type="text" id="auth-user" placeholder="Usuário">
+            <input type="email" id="auth-user" placeholder="Email">
             <input type="password" id="auth-pass" placeholder="Senha">
             
             <button class="btn-primary" style="width:100%; justify-content: center; margin-top: 15px;" onclick="Auth.submit()">Acessar Painel</button>
@@ -473,40 +473,26 @@ h1, h2, h3, h4, h5, h6, p, span, td, th {
 <script>
 
 // --- API & ESTADO ---
+const BASE_URL = 'http://localhost:8080';
 const API = {
     user: null,
-    data: { projects: [], notes: [], transactions: [], social: [] }, 
 
     async request(endpoint, method = 'GET', body = null) {
-        const options = { method, headers: { 'Content-Type': 'application/json' } };
-        if (body) options.body = JSON.stringify(body);
-        let url = endpoint;
-        if (method === 'GET' && this.user) url += `?user=${this.user.username}`;
-        try {
-            const res = await fetch(url, options);
-            return await res.json();
-        } catch (e) { console.error("Erro API", e); return null; }
-    },
+    const options = {
+        method,
+        headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) options.body = JSON.stringify(body);
 
-    async sync() {
-        if (!this.user) return;
-        await this.request('/api/sync', 'POST', {
-            user: this.user.username,
-            data: this.data
-        });
-        App.render();
-    },
-
-    async load() {
-        const res = await API.request('/api/data');
-        if (res) {
-            this.data.projects = res.projects || [];
-            this.data.notes = res.notes || [];
-            this.data.transactions = res.transactions || [];
-            this.data.social = res.social || [];
-        }
-        App.render();
+    try {
+        const res = await fetch(BASE_URL + endpoint, options);
+        if (!res.ok) throw await res.json();
+        return await res.json();
+    } catch (e) {
+        console.error("Erro API", e);
+        return null;
     }
+}
 };
 
 const Auth = {
@@ -531,16 +517,24 @@ const Auth = {
         const u = document.getElementById('auth-user').value;
         const p = document.getElementById('auth-pass').value;
         const n = document.getElementById('auth-name').value;
-        const endpoint = this.isRegistering ? '/api/register' : '/api/login';
-        const res = await API.request(endpoint, 'POST', { username: u, password: p, name: n });
-        if (res && res.status === 'success') {
-            API.user = res.user;
-            localStorage.setItem('user_session', JSON.stringify(res.user));
+
+        // ROTAS DO BACKEND JAVA
+        const endpoint = this.isRegistering
+            ? '/auth/register'
+            : '/auth/login';
+
+        const payload = this.isRegistering
+            ? { nome: n, email: u, senha: p }
+            : { email: u, senha: p };
+
+        const res = await API.request(endpoint, 'POST', payload);
+
+        if (res) {
+            API.user = res;
+            localStorage.setItem('user_session', JSON.stringify(res));
             this.showApp();
         } else {
-            const errEl = document.getElementById('auth-error');
-            errEl.classList.remove('hidden');
-            errEl.innerText = res ? res.message : "Erro de conexão";
+            alert("Erro ao autenticar");
         }
     },
     logout() { localStorage.removeItem('user_session'); location.reload(); },
@@ -554,22 +548,18 @@ const Auth = {
 
 const Nav = {
     go(viewId, event) {
-        // Esconde todas as telas
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         const target = document.getElementById(`view-${viewId}`);
         if(target) target.classList.add('active');
-        
-        // Ativa o botão da sidebar
+
         document.querySelectorAll('.sidebar nav button').forEach(el => el.classList.remove('active'));
         if (event) event.currentTarget.classList.add('active');
-        
-        // Atualiza o título da página
+
         document.getElementById('page-title').innerText = 
             viewId === 'social' ? 'Redes Sociais' : viewId.charAt(0).toUpperCase() + viewId.slice(1);
-        
-        // LÓGICA DO BOTÃO DO HEADER
+
         const btnHeader = document.getElementById('btn-header-action');
-        btnHeader.classList.remove('hidden'); // Mostra por padrão
+        btnHeader.classList.remove('hidden');
 
         if(viewId === 'projects') {
             btnHeader.innerHTML = '<i class="fas fa-plus"></i> Novo Projeto';
@@ -584,7 +574,7 @@ const Nav = {
             btnHeader.innerHTML = '<i class="fas fa-share-nodes"></i> Adicionar Perfil';
             btnHeader.onclick = () => Modal.open('social');
         } else {
-            btnHeader.classList.add('hidden'); // Esconde na dashboard se quiser
+            btnHeader.classList.add('hidden');
         }
 
         App.render();
