@@ -301,7 +301,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th {
             <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem; text-align: center;">Gerencie suas finanças de forma segura.</p>
             
             <input type="text" id="auth-name" placeholder="Seu Nome Completo" class="hidden">
-            <input type="email" id="auth-user" placeholder="Email">
+            <input type="email" id="auth-user" placeholder="email">
             <input type="password" id="auth-pass" placeholder="Senha">
             
             <button class="btn-primary" style="width:100%; justify-content: center; margin-top: 15px;" onclick="Auth.submit()">Acessar Painel</button>
@@ -476,27 +476,67 @@ h1, h2, h3, h4, h5, h6, p, span, td, th {
 const BASE_URL = 'https://personal-finance-api-2pke.onrender.com';
 const API = {
     user: null,
+    data: { projects: [], notes: [], transactions: [], social: [] }, 
 
-    async request(endpoint, method = 'GET', body = null) {
-    const options = {
-        method,
-        headers: { 'Content-Type': 'application/json' }
-    };
-    if (body) options.body = JSON.stringify(body);
+        async request(endpoint, method = 'GET', body = null) {
+        const options = {
+            method,
+            headers: { 'Content-Type': 'application/json' }
+        };
 
-    try {
-        const res = await fetch(BASE_URL + endpoint, options);
-        if (!res.ok) throw await res.json();
-        return await res.json();
-    } catch (e) {
-        console.error("Erro API", e);
-        return null;
+        if (body) options.body = JSON.stringify(body);
+
+        const url = BASE_URL + endpoint;
+
+        try {
+            const res = await fetch(url, options);
+
+            if (!res.ok) {
+                console.error('Erro HTTP:', res.status);
+                return null;
+            }
+
+            return await res.json();
+
+            
+        } catch (e) {
+            console.error("Erro API", e);
+            return null;
+        }
+    },
+
+        async sync() {
+        if (!this.user) return;
+
+        await this.request('/api/sync', 'POST', {
+            data: this.data
+        });
+
+        App.render();
+    },
+
+    async load() {
+    if (!API.user || !API.user.id) return;
+
+    const res = await API.request(
+        `/usuarios/${API.user.id}/resumo`,
+        'GET'
+    );
+
+    if (res) {
+        this.data.projects = res.projects || [];
+        this.data.notes = res.notes || [];
+        this.data.transactions = res.transactions || [];
+        this.data.social = res.social || [];
     }
+
+    App.render();
 }
 };
 
 const Auth = {
     isRegistering: false,
+
     init() {
         const stored = localStorage.getItem('user_session');
         if (stored) {
@@ -506,60 +546,96 @@ const Auth = {
             document.getElementById('login-screen').classList.remove('hidden');
         }
     },
+
     toggleMode() {
         this.isRegistering = !this.isRegistering;
-        document.getElementById('auth-title').innerText = this.isRegistering ? "Criar Conta" : "Fazer Login";
-        document.getElementById('auth-name').classList.toggle('hidden');
-        document.querySelector('.toggle-auth').innerText = this.isRegistering ? "Já tenho conta" : "Criar conta nova";
-        document.querySelector('#login-screen button').innerText = this.isRegistering ? "Cadastrar" : "Acessar Painel";
-    },
-    async submit() {
-        const u = document.getElementById('auth-user').value;
-        const p = document.getElementById('auth-pass').value;
-        const n = document.getElementById('auth-name').value;
 
-        // ROTAS DO BACKEND JAVA
+        document.getElementById('auth-title').innerText =
+            this.isRegistering ? "Criar Conta" : "Fazer Login";
+
+        document.getElementById('auth-name').classList.toggle('hidden');
+
+        document.querySelector('.toggle-auth').innerText =
+            this.isRegistering ? "Já tenho conta" : "Criar conta nova";
+
+        document.querySelector('#login-screen button').innerText =
+            this.isRegistering ? "Cadastrar" : "Acessar Painel";
+    },
+
+    async submit() {
+        const email = document.getElementById('auth-user').value;
+        const senha = document.getElementById('auth-pass').value;
+        const nome  = document.getElementById('auth-name').value;
+
         const endpoint = this.isRegistering
             ? '/auth/register'
             : '/auth/login';
 
         const payload = this.isRegistering
-            ? { nome: n, email: u, senha: p }
-            : { email: u, senha: p };
+            ? { nome, email, senha }
+            : { email, senha };
 
         const res = await API.request(endpoint, 'POST', payload);
+
+        console.log('AUTH RESPONSE RAW:', res);
+        console.log('ID:', res?.id);
+        console.log('CHAVES:', Object.keys(res || {}));
+
+        if (res) {
+            API.user = res;
+            localStorage.setItem('user_session', JSON.stringify(res));
+            this.showApp();
+        }
 
         if (res) {
             API.user = res;
             localStorage.setItem('user_session', JSON.stringify(res));
             this.showApp();
         } else {
-            alert("Erro ao autenticar");
+            const errEl = document.getElementById('auth-error');
+            if (errEl) {
+                errEl.classList.remove('hidden');
+                errEl.innerText = "Erro ao autenticar";
+            } else {
+                alert("Erro ao autenticar");
+            }
         }
     },
-    logout() { localStorage.removeItem('user_session'); location.reload(); },
+
+    logout() {
+        localStorage.removeItem('user_session');
+        location.reload();
+    },
+
     showApp() {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-container').classList.remove('hidden');
-        document.getElementById('user-name').innerText = API.user.name;
+
+        // backend retorna `nome`
+        document.getElementById('user-name').innerText = API.user.nome;
+
         API.load();
     }
 };
 
 const Nav = {
     go(viewId, event) {
+        // Esconde todas as telas
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         const target = document.getElementById(`view-${viewId}`);
         if(target) target.classList.add('active');
-
+        
+        // Ativa o botão da sidebar
         document.querySelectorAll('.sidebar nav button').forEach(el => el.classList.remove('active'));
         if (event) event.currentTarget.classList.add('active');
-
+        
+        // Atualiza o título da página
         document.getElementById('page-title').innerText = 
             viewId === 'social' ? 'Redes Sociais' : viewId.charAt(0).toUpperCase() + viewId.slice(1);
-
+        
+        // LÓGICA DO BOTÃO DO HEADER
         const btnHeader = document.getElementById('btn-header-action');
-        btnHeader.classList.remove('hidden');
+        btnHeader.classList.remove('hidden'); // Mostra por padrão
 
         if(viewId === 'projects') {
             btnHeader.innerHTML = '<i class="fas fa-plus"></i> Novo Projeto';
@@ -574,7 +650,7 @@ const Nav = {
             btnHeader.innerHTML = '<i class="fas fa-share-nodes"></i> Adicionar Perfil';
             btnHeader.onclick = () => Modal.open('social');
         } else {
-            btnHeader.classList.add('hidden');
+            btnHeader.classList.add('hidden'); // Esconde na dashboard se quiser
         }
 
         App.render();
